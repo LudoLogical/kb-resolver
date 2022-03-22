@@ -7,10 +7,10 @@ public class Main {
     private static class Problem {
 
         Set<String> variables;
-        ArrayList<LinkedHashMap<String, Boolean>> clauses;
+        ArrayList<HashMap<String, Boolean>> knowledgeBase;
 
         private void addToClause(String variable, boolean isTrue,
-                                 LinkedHashMap<String, Boolean> clause, Set<String> variables) {
+                                 HashMap<String, Boolean> clause, Set<String> variables) {
 
             clause.put(variable, isTrue);
             variables.add(variable);
@@ -31,7 +31,7 @@ public class Main {
             }
 
             variables = new HashSet<>();
-            clauses = new ArrayList<>();
+            knowledgeBase = new ArrayList<>();
 
             String[] prevContent;
             try {
@@ -43,7 +43,7 @@ public class Main {
             }
 
             while (scan.hasNextLine()) {
-                LinkedHashMap<String, Boolean> prevClause = new LinkedHashMap<>();
+                HashMap<String, Boolean> prevClause = new HashMap<>();
                 for (String s : prevContent) {
                     if (s.charAt(0) == '~') {
                         addToClause(s.substring(1), false, prevClause, variables);
@@ -51,22 +51,87 @@ public class Main {
                         addToClause(s, true, prevClause, variables);
                     }
                 }
-                clauses.add(prevClause);
+                knowledgeBase.add(prevClause);
                 prevContent = scan.nextLine().split(" ");
             }
             scan.close();
 
             for (String s : prevContent) {
-                LinkedHashMap<String, Boolean> newClause = new LinkedHashMap<>();
+                HashMap<String, Boolean> newClause = new HashMap<>();
                 if (s.charAt(0) == '~') {
                     addToClause(s.substring(1), true, newClause, variables);
                 } else {
                     addToClause(s, false, newClause, variables);
                 }
-                clauses.add(newClause);
+                knowledgeBase.add(newClause);
             }
 
         }
+
+    }
+
+    private static HashMap<String, Boolean> resolveClauses(HashMap<String, Boolean> a,
+                                                                 HashMap<String, Boolean> b) {
+
+        // don't forget to remove repeated literals
+        return null; // if the resolved clause is just "true"
+
+    }
+
+    public static boolean resolveProblem(Problem problem) {
+
+        for (int i = 1; i < problem.knowledgeBase.size(); i++) {
+
+            HashMap<String, Boolean> currentClause = problem.knowledgeBase.get(i);
+
+            for (int j = 0; j < i; j++) {
+
+                HashMap<String, Boolean> resolvedClause = resolveClauses(currentClause, problem.knowledgeBase.get(i));
+
+                if (resolvedClause != null) {
+
+                    // Check for logical equivalence to an existing KB entry
+
+                    boolean logicalEquivalentFound = false;
+                    for (int k = 0; k < problem.knowledgeBase.size(); k++) {
+
+                        if (k == i || k == j) {
+                            continue;
+                        }
+
+                        HashMap<String, Boolean> clauseToCompare = problem.knowledgeBase.get(k);
+                        Set<String> toCompareKeySet = clauseToCompare.keySet();
+                        if (resolvedClause.keySet().containsAll(toCompareKeySet)) {
+
+                            boolean literalsAreIdentical = true;
+                            for (String s : toCompareKeySet) {
+                                if (!resolvedClause.get(s).equals(clauseToCompare.get(s))) {
+                                    literalsAreIdentical = false;
+                                    break;
+                                }
+                            }
+
+                            if (literalsAreIdentical) {
+                                logicalEquivalentFound = true;
+                                break;
+                            }
+
+                        }
+
+                    }
+
+                    if (!logicalEquivalentFound) {
+                        problem.knowledgeBase.add(resolvedClause);
+                        // print the clause, the line number, and the current values of j and i
+                    }
+
+                }
+
+            }
+
+        }
+
+        return false;
 
     }
 
@@ -80,7 +145,15 @@ public class Main {
         Problem problem = new Problem(args[0]);
 
         System.out.println(problem.variables);
-        System.out.println(problem.clauses);
+        System.out.println(problem.knowledgeBase);
+
+        boolean succeeded = resolveProblem(problem);
+
+        if (succeeded) {
+            System.out.println("Valid");
+        } else {
+            System.out.println("Fail");
+        }
 
     }
 
